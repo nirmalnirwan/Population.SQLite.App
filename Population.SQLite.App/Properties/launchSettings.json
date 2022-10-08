@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "Population.SQLite.App.Api": {
+      "commandName": "Project"
+    }
+  }
+}
