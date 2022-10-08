@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Population.SQLite.App.Application;
 using Population.SQLite.App.Infrastructure;
 using Serilog;
-using System;
+using System; 
 
 [assembly: FunctionsStartup(typeof(Population.SQLite.App.Api.Startup))]
 namespace Population.SQLite.App.Api
