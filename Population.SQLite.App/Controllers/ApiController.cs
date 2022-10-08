@@ -67,7 +67,11 @@ namespace Population.SQLite.App.Api.Controllers
 
             _logger.LogInformation($"Successful response for {actionName} : {JsonConvert.SerializeObject(result)}");
 
-            return new OkObjectResult(result);
+            return new OkObjectResult(JsonConvert.SerializeObject(result, Formatting.None,
+                        new JsonSerializerSettings()
+                        {
+                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                        }));
         }
         [NonAction]
         protected virtual IActionResult SendSuccessfulGetResultDefault(string type, object result)
