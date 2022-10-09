@@ -1,0 +1,121 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "test"
+    },
+    "applicationName": {
+      "type": "string"
+    },
+    "hostingPlanName": {
+      "type": "string"
+    },
+    "functionAppName": {
+      "type": "string"
+    },
+    "hostingPlanSku": {
+      "type": "string"
+    },
+    "hostingPlanSkuCode": {
+      "type": "string"
+    },
+    "cs": {
+      "type": "string"
+    }
+  },
+    "variables": {
+        "environment": "[toUpper(parameters('environmentName'))]",
+        "entropy": "[take(uniqueString(concat(parameters('functionAppName'), resourceGroup().id)), 5)]",
+        "storageAccountName": "[take(tolower(replace(replace(concat(parameters('functionAppName'), variables('entropy')), '-', ''), '.','')), 24)]"
+    },
+    "resources": [
+      
+        {
+            "apiVersion": "2019-06-01",
+            "comments": "Storage account for Functions App",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "ANZ-ESB": "[variables('environment')]",
+                "Application": "[parameters('applicationName')]"
+            },
+            "kind": "StorageV2",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "properties": {
+                "supportsHttpsTrafficOnly": true
+            }
+        },
+        {
+            "apiVersion": "2018-02-01",
+            "comments": "Hosting Plan for Functions App",
+            "name": "[parameters('hostingPlanName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "location": "[resourceGroup().location]",
+            "kind": "",
+            "tags": {
+                "ANZ-ESB": "[variables('environment')]",
+                "Application": "[parameters('applicationName')]"
+            },
+            "dependsOn": [
+            ],
+            "properties": {
+                "name": "[parameters('hostingPlanName')]"
+            },
+          "sku": {
+            "Tier": "[parameters('hostingPlanSku')]",
+            "Name": "[parameters('hostingPlanSkuCode')]",
+            //,"capacity": "[parameters('hostingPlanSkuCapacity')]"
+            "capacity": 1
+          }
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "comments": "Functions Application",
+            "name": "[parameters('functionAppName')]",
+            "type": "Microsoft.Web/sites",
+            "kind": "functionapp",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "ANZ-ESB": "[variables('environment')]",
+                "Application": "[parameters('applicationName')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+            ],
+            "resources": [
+                {
+                    "apiVersion": "2018-11-01",
+                    "name": "appsettings",
+                    "type": "config",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]",
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+                    ],
+                  "properties": {
+                    "FUNCTIONS_EXTENSION_VERSION": "~3",
+                    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+                    "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]",
+                    "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]",
+                    "WEBSITE_CONTENTSHARE": "[toLower(parameters('functionAppName'))]",
+                    "cs": "[parameters('cs')]"
+                  }
+                }
+            ],
+            "properties": {
+                "name": "[parameters('functionAppName')]",
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]",
+                "hostingEnvironment": "",
+                "clientAffinityEnabled": true
+            }
+        }
+    ]
+}

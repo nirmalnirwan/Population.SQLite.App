@@ -1,0 +1,9 @@
+trigger:
+  - Population.SQLite.App-Prod
+
+variables:
+- group: Population.SQLite.App-prod
+    
+stages:
+- template: Population.SQLite.App-build.yml
+- template: Population.SQLite.App-provision-deploy.yml

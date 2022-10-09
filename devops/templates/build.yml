@@ -1,0 +1,28 @@
+# Template for building a single project
+
+parameters:
+  project_file: ''
+  project_name: ''
+
+steps:
+
+  - bash: dotnet publish ${{parameters.project_file}} -c Release --source https://api.nuget.org/v3/index.json --output $(Build.ArtifactStagingDirectory)/publish/${{parameters.project_name}}
+    displayName: 'Building: ${{parameters.project_name}}'
+
+  - bash: ls -R '$(Build.ArtifactStagingDirectory)/publish/${{parameters.project_name}}'
+    displayName: 'Listing artifact files: ${{parameters.project_name}}'
+
+  - task: ArchiveFiles@2
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    displayName: 'Zipping: ${{parameters.project_name}}'
+    inputs:
+      rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/publish/${{parameters.project_name}}'
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId)_${{parameters.project_name}}.zip
+      replaceExistingArchive: true
+
+  - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId)_${{parameters.project_name}}.zip
+    displayName: 'Publishing Artifact: ${{parameters.project_name}}'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    artifact: ${{parameters.project_name}}

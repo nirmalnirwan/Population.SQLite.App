@@ -1,0 +1,29 @@
+# build all projects for an aus deployment
+
+stages:
+
+
+- stage: Build
+  displayName: Build stage
+  pool:
+      vmImage: 'ubuntu-latest'
+
+  jobs:
+  - job: 'Build_All'
+    steps: 
+
+    - bash: echo 'Running Build for environment $(environmentName)'
+
+
+    # == build function app project
+    - template: '../../templates/build.yml'
+      parameters: 
+        project_file: '$(System.DefaultWorkingDirectory)/Population.SQLite.App/Population.SQLite.App'
+        project_name: 'Population.SQLite.App_Api'
+
+   
+
+  
+
+
+

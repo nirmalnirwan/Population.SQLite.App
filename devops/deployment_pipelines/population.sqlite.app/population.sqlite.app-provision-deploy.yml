@@ -1,0 +1,14 @@
+stages:
+
+   
+  - template: ../../templates/function-app-provision-deploy.yml
+    parameters:
+      variable_group: Population.SQLite.App-api
+      project_name: 'Population.SQLite.App_Api'
+ 
+
+
+
+
+ 
+

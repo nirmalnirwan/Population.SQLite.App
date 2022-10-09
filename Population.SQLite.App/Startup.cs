@@ -24,7 +24,7 @@ namespace Population.SQLite.App.Api
 
             Log.Logger = new LoggerConfiguration()
               .MinimumLevel.Information()
-              .WriteTo.RollingFile(actual_root + "/log/{HalfHour}-log.txt")
+              .WriteTo.RollingFile(actual_root + "/log/{Date}-log.txt")
               .CreateLogger();
 
             builder.Services.AddLogging(lb => { lb.AddSerilog(Log.Logger, true); });

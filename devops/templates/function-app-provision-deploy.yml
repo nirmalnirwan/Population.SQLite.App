@@ -1,0 +1,80 @@
+
+parameters:
+  variable_group: ''
+  project_name: ''
+  vmImageName: 'vs2017-win2016'
+  appType: 'functionApp'
+  fullArmParametersFile: '$(armParametersFile).$(environmentName).json'
+  armOverrideParameters: >
+        -environmentName $(environmentName)
+        -applicationName $(applicationName)
+        -hostingPlanName $(applicationName)-$(environmentName)
+        -hostingPlanSku $(hostingPlanSku)
+        -hostingPlanSkuCode $(hostingPlanSkuCode)
+        -functionAppName $(applicationName)-$(environmentName)
+        -keyVaultName $(keyVaultName)
+         
+stages:
+- stage: Provision_${{parameters.project_name}}
+  displayName: Provision Function App ${{parameters.project_name}}
+  variables:
+  - group: ${{parameters.variable_group}}
+  dependsOn: Build
+  condition: succeeded()
+
+  jobs:
+  - job: Provision
+    displayName: Provision
+    pool:
+      vmImage: ${{parameters.vmImageName}}
+    steps:
+
+      - bash: set
+
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: Deploy ARM Template
+        inputs:
+          deploymentScope: 'Resource Group'
+          azureResourceManagerConnection: $(serviceConnection)
+          action: 'Create Or Update Resource Group'
+          resourceGroupName: $(resourceGroupName)
+          location: $(resourceGroupLocation)
+          templateLocation: 'Linked artifact'
+          csmFile: $(armTemplateFile)
+          csmParametersFile: ${{parameters.fullArmParametersFile}}
+          overrideParameters: ${{parameters.armOverrideParameters}}
+          deploymentMode: 'Incremental'
+          deploymentMethod: 'runFromPackage'
+
+
+
+- stage: Deploy_${{parameters.project_name}}
+  displayName: Deploy ${{parameters.project_name}}
+  dependsOn: Provision_${{parameters.project_name}}
+  condition: succeeded()
+  variables:
+    - group: ${{parameters.variable_group}}
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: 'development'
+    pool:
+        vmImage: ${{parameters.vmImageName}}
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureFunctionApp@1
+            displayName: 'Deploy Azure Function: $(applicationName)-$(environmentName)'
+            inputs:
+              azureSubscription: $(serviceConnection)
+              appType: '${{parameters.appType}}'
+              appName: '$(applicationName)-$(environmentName)'
+              package: '$(Pipeline.Workspace)/${{parameters.project_name}}/$(Build.BuildId)_${{parameters.project_name}}.zip'
+              deploymentMethod: 'runFromPackage'
+              resourceGroupName: $(resourceGroupName)
+
+
+
